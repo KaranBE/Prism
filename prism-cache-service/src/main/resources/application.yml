@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: prism-cache-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/prism_cache}
+    username: ${SPRING_DATASOURCE_USERNAME:prism}
+    password: ${SPRING_DATASOURCE_PASSWORD:prism}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+prism:
+  cache:
+    similarity-threshold: ${PRISM_CACHE_SIMILARITY_THRESHOLD:0.70}
+    ttl-seconds: ${PRISM_CACHE_TTL_SECONDS:3600}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

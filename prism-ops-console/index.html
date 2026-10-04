@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prism Ops Console</title>
+<style>
+  :root { --bg:#0f1117; --panel:#161a23; --border:#262b38; --text:#e6e8ee; --muted:#8a90a2; --accent:#7c9cff; --good:#4ade80; --bad:#f87171; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding: 20px 28px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  header h1 { font-size: 18px; margin:0; font-weight:600; }
+  header .sub { color:var(--muted); font-size: 13px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 28px 60px; display:grid; gap:20px; grid-template-columns: 1fr 1fr; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .panel h2 { font-size:14px; margin:0 0 12px; color: var(--accent); text-transform:uppercase; letter-spacing: .04em; }
+  .full { grid-column: 1 / -1; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; margin-top:10px; }
+  input, select, textarea { width:100%; background:#0c0e14; border:1px solid var(--border); border-radius:6px; color:var(--text); padding:8px 10px; font-size:13px; font-family: inherit; }
+  textarea { min-height: 80px; resize: vertical; }
+  button { margin-top:14px; background:var(--accent); color:#0c0e14; border:none; border-radius:6px; padding:9px 16px; font-weight:600; cursor:pointer; font-size:13px; }
+  button.secondary { background:transparent; border:1px solid var(--border); color:var(--text); }
+  button.danger { background:var(--bad); color:#160c0c; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .stat { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--border); font-size:13px; }
+  .stat:last-child { border-bottom:none; }
+  .stat .v { color: var(--accent); font-weight:600; }
+  pre { background:#0c0e14; border:1px solid var(--border); border-radius:6px; padding:10px; font-size:12px; overflow:auto; max-height:260px; white-space:pre-wrap; }
+  table { width:100%; border-collapse: collapse; font-size:12px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); }
+  th { color:var(--muted); font-weight:500; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:99px; font-size:11px; font-weight:600; }
+  .badge.hit { background:rgba(74,222,128,.15); color:var(--good); }
+  .badge.miss { background:rgba(148,163,184,.15); color:var(--muted); }
+  .badge.err { background:rgba(248,113,113,.15); color:var(--bad); }
+  .provider-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border); }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; }
+  .dot.up { background:var(--good); } .dot.down { background:var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Prism Ops Console</h1>
+    <div class="sub">LLM Gateway &middot; smart routing &middot; semantic cache</div>
+  </div>
+  <div class="sub" id="clock"></div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Connection</h2>
+    <label>Gateway base URL</label>
+    <input id="gatewayUrl" value="http://localhost:8080">
+    <label>Usage service base URL (cross-tenant report)</label>
+    <input id="usageUrl" value="http://localhost:8082">
+    <label>Virtual key</label>
+    <input id="apiKey" value="prism-sk-alpha-0001">
+    <div class="row">
+      <button onclick="refreshAll()">Refresh</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Provider health &middot; failover demo</h2>
+    <div id="providers"></div>
+    <div class="sub" style="margin-top:8px;">Toggle a provider off, then send a request on a model it serves to watch <code>x-prism-fallback</code> flip to <code>true</code>.</div>
+  </section>
+
+  <section class="panel full">
+    <h2>Try a completion</h2>
+    <div class="row">
+      <div style="flex:1; min-width:200px;">
+        <label>Model / alias</label>
+        <select id="model">
+          <option value="auto">auto (smart routing)</option>
+          <option value="fast">fast</option>
+          <option value="smart">smart</option>
+          <option value="mock-fast-v1">mock-fast-v1</option>
+          <option value="mock-smart-v1">mock-smart-v1</option>
+        </select>
+      </div>
+      <div style="flex:1; min-width:120px;">
+        <label>Streaming</label>
+        <select id="stream"><option value="false">off</option><option value="true">on (SSE)</option></select>
+      </div>
+    </div>
+    <label>Prompt</label>
+    <textarea id="prompt">What is the capital of France?</textarea>
+    <div class="row">
+      <button onclick="sendCompletion()">Send</button>
+      <button class="secondary" onclick="sendCompletion()">Send again (test cache hit)</button>
+    </div>
+    <label style="margin-top:14px;">Response</label>
+    <pre id="responseOut">-</pre>
+    <label>Header contract</label>
+    <pre id="headerOut">-</pre>
+  </section>
+
+  <section class="panel">
+    <h2>Usage &middot; this key</h2>
+    <div id="summaryOut">-</div>
+  </section>
+
+  <section class="panel">
+    <h2>Platform report (usage-service)</h2>
+    <div id="reportOut">-</div>
+  </section>
+
+  <section class="panel full">
+    <h2>Recent requests</h2>
+    <div id="requestsOut">-</div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+setInterval(() => $('clock').textContent = new Date().toLocaleTimeString(), 1000);
+
+function gw() { return $('gatewayUrl').value.replace(/\/$/, ''); }
+function us() { return $('usageUrl').value.replace(/\/$/, ''); }
+function authHeaders() { return { 'Authorization': 'Bearer ' + $('apiKey').value, 'Content-Type': 'application/json' }; }
+
+async function loadProviders() {
+  try {
+    const res = await fetch(gw() + '/admin/providers');
+    const providers = await res.json();
+    $('providers').innerHTML = providers.map(p => `
+      <div class="provider-row">
+        <span><span class="dot ${p.healthy ? 'up' : 'down'}"></span>${p.provider}</span>
+        <button class="${p.healthy ? 'danger' : 'secondary'}" style="margin:0;padding:5px 10px;"
+          onclick="toggleProvider('${p.provider}', ${!p.healthy})">
+          ${p.healthy ? 'Take down' : 'Bring up'}
+        </button>
+      </div>`).join('');
+  } catch (e) { $('providers').innerHTML = '<span class="sub">Could not reach gateway.</span>'; }
+}
+
+async function toggleProvider(name, healthy) {
+  await fetch(`${gw()}/admin/providers/${name}/toggle?healthy=${healthy}`, { method: 'POST' });
+  loadProviders();
+}
+
+async function sendCompletion() {
+  const body = {
+    model: $('model').value,
+    stream: $('stream').value === 'true',
+    messages: [{ role: 'user', content: $('prompt').value }]
+  };
+  $('responseOut').textContent = 'Sending...';
+  $('headerOut').textContent = '-';
+
+  if (body.stream) {
+    const res = await fetch(gw() + '/v1/chat/completions', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    $('headerOut').textContent = headerContractText(res.headers);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let out = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      out += decoder.decode(value, { stream: true });
+      $('responseOut').textContent = out;
+    }
+  } else {
+    const res = await fetch(gw() + '/v1/chat/completions', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    $('headerOut').textContent = headerContractText(res.headers);
+    const json = await res.json();
+    $('responseOut').textContent = JSON.stringify(json, null, 2);
+  }
+  loadSummary();
+  loadRequests();
+}
+
+function headerContractText(headers) {
+  return ['x-prism-provider', 'x-prism-cache', 'x-prism-fallback', 'x-prism-cost-usd']
+    .map(h => `${h}: ${headers.get(h) ?? '(not set - see stream meta event)'}`).join('\n');
+}
+
+async function loadSummary() {
+  try {
+    const res = await fetch(gw() + '/v1/usage/summary', { headers: authHeaders() });
+    const s = await res.json();
+    $('summaryOut').innerHTML = `
+      <div class="stat"><span>Requests (30d)</span><span class="v">${s.totalRequests}</span></div>
+      <div class="stat"><span>Spend / Budget</span><span class="v">$${Number(s.monthlySpendUsd).toFixed(4)} / $${Number(s.monthlyBudgetUsd).toFixed(2)}</span></div>
+      <div class="stat"><span>Cache hit rate</span><span class="v">${(s.cacheHitRate * 100).toFixed(1)}%</span></div>`;
+  } catch (e) { $('summaryOut').textContent = 'Could not load usage summary.'; }
+}
+
+async function loadRequests() {
+  try {
+    const res = await fetch(gw() + '/v1/usage/requests?size=10', { headers: authHeaders() });
+    const page = await res.json();
+    const rows = (page.content || []).map(r => `
+      <tr>
+        <td>${new Date(r.createdAt).toLocaleTimeString()}</td>
+        <td>${r.requestedModel} → ${r.resolvedModel || '-'}</td>
+        <td>${r.provider || '-'}</td>
+        <td>${r.status.startsWith('ERROR') ? `<span class="badge err">${r.status}</span>` : '<span class="badge hit">OK</span>'}</td>
+        <td>${r.cacheHit ? '<span class="badge hit">HIT</span>' : '<span class="badge miss">MISS</span>'}</td>
+        <td>${r.fallbackUsed ? 'yes' : 'no'}</td>
+        <td>$${Number(r.costUsd || 0).toFixed(6)}</td>
+        <td>${r.latencyMs} ms</td>
+      </tr>`).join('');
+    $('requestsOut').innerHTML = `<table><thead><tr><th>Time</th><th>Model</th><th>Provider</th><th>Status</th><th>Cache</th><th>Fallback</th><th>Cost</th><th>Latency</th></tr></thead><tbody>${rows}</tbody></table>`;
+  } catch (e) { $('requestsOut').textContent = 'Could not load recent requests.'; }
+}
+
+async function loadReport() {
+  try {
+    const res = await fetch(us() + '/usage/report?days=7');
+    const r = await res.json();
+    const rows = (r.byProvider || []).map(p => `
+      <div class="stat"><span>${p.provider}</span><span class="v">${p.requestCount} req &middot; $${Number(p.totalCostUsd).toFixed(4)} &middot; ${Number(p.avgLatencyMs).toFixed(0)}ms avg</span></div>`).join('');
+    $('reportOut').innerHTML = `
+      <div class="stat"><span>Total spend (7d)</span><span class="v">$${Number(r.totalSpendUsd).toFixed(4)}</span></div>
+      <div class="stat"><span>Fallback count</span><span class="v">${r.fallbackCount}</span></div>
+      ${rows}`;
+  } catch (e) { $('reportOut').textContent = 'Could not reach usage-service.'; }
+}
+
+function refreshAll() { loadProviders(); loadSummary(); loadRequests(); loadReport(); }
+refreshAll();
+</script>
+</body>
+</html>

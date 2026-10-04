@@ -1,0 +1,22 @@
+{
+  "aliases": {
+    "fast": {
+      "primary": "mock-fast-v1",
+      "fallbackChain": ["mock-fast-v2"]
+    },
+    "smart": {
+      "primary": "mock-smart-v1",
+      "fallbackChain": ["mock-smart-v2"]
+    }
+  },
+  "provider": {
+    "timeoutMillis": 8000,
+    "maxRetries": 2,
+    "initialBackoffMillis": 200,
+    "backoffMultiplier": 2.0
+  },
+  "cache": {
+    "similarityThreshold": 0.70,
+    "ttlSeconds": 3600
+  }
+}

@@ -1,0 +1,77 @@
+version: "3.9"
+
+# Brings up: one Postgres instance (three logical databases - one per microservice, the
+# per-service-datastore principle without needing three separate DB containers for a demo),
+# and the three Prism microservices. Each service is independently scalable - `docker compose
+# up --scale prism-gateway-service=3` works because the gateway is stateless (all state lives
+# in Postgres / the peer services), which is the point of keeping rate-limit state process-
+# local only in the "single instance" mode documented in the README.
+
+services:
+  postgres:
+    image: mirror.gcr.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: prism
+      POSTGRES_PASSWORD: prism
+      POSTGRES_DB: prism
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prism"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prism-cache-service:
+    build:
+      context: .
+      dockerfile: prism-cache-service/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/prism_cache
+      SPRING_DATASOURCE_USERNAME: prism
+      SPRING_DATASOURCE_PASSWORD: prism
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  prism-usage-service:
+    build:
+      context: .
+      dockerfile: prism-usage-service/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/prism_usage
+      SPRING_DATASOURCE_USERNAME: prism
+      SPRING_DATASOURCE_PASSWORD: prism
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  prism-gateway-service:
+    build:
+      context: .
+      dockerfile: prism-gateway-service/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/prism
+      SPRING_DATASOURCE_USERNAME: prism
+      SPRING_DATASOURCE_PASSWORD: prism
+      PRISM_CACHE_SERVICE_URL: http://prism-cache-service:8081
+      PRISM_USAGE_SERVICE_URL: http://prism-usage-service:8082
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      prism-cache-service:
+        condition: service_started
+      prism-usage-service:
+        condition: service_started
+
+volumes:
+  pgdata:

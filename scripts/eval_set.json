@@ -1,0 +1,13 @@
+[
+  { "prompt": "Prove that sqrt(2) is irrational.", "expected_tier": "smart", "trap": "short-but-hard" },
+  { "prompt": "Why does TCP use a three-way handshake instead of a two-way one?", "expected_tier": "smart", "trap": "short-but-hard" },
+  { "prompt": "Debug this: for(i=0;i<n;i++) { arr[i]=arr[i+1]; } throws IndexOutOfBounds.", "expected_tier": "smart", "trap": "short-but-hard" },
+  { "prompt": "Compare the trade-offs of optimistic vs pessimistic locking in a database.", "expected_tier": "smart", "trap": "short-but-hard" },
+  { "prompt": "Explain the CAP theorem and why a distributed system can't have all three.", "expected_tier": "smart", "trap": "short-but-hard" },
+  { "prompt": "hi", "expected_tier": "fast", "trap": "trivial" },
+  { "prompt": "What time zone is Tokyo in?", "expected_tier": "fast", "trap": "trivial" },
+  { "prompt": "Say hello in French.", "expected_tier": "fast", "trap": "trivial" },
+  { "prompt": "Please continue this story about a dog who likes to play fetch in the park every single sunny afternoon with his best friend, a golden retriever named Max, who also enjoys long walks and chasing squirrels around the old oak tree near the pond where the ducks like to swim in circles all day long while children watch nearby and laugh at their antics for hours on end.", "expected_tier": "fast", "trap": "long-but-trivial" },
+  { "prompt": "List, in as much detail as you enjoy, every color you can think of, one per line, starting with red and going through the whole rainbow and then some pastel shades too, just for fun, no need to be fast about it, take your time and be thorough and friendly about it.", "expected_tier": "fast", "trap": "long-but-trivial" },
+  { "prompt": "Write a long, cheerful good-morning message wishing someone a wonderful day, mentioning coffee, sunshine, and a productive day ahead, and keep it warm and simple throughout the whole message from start to finish.", "expected_tier": "fast", "trap": "long-but-trivial" }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "keyValue": "prism-sk-alpha-0001",
+    "alias": "team-alpha",
+    "allowedModels": ["fast", "smart", "auto", "mock-fast-v1", "mock-smart-v1", "mock-fast-v2", "mock-smart-v2"],
+    "requestsPerMinute": 60,
+    "monthlyBudgetUsd": 50.00
+  },
+  {
+    "keyValue": "prism-sk-beta-0002",
+    "alias": "team-beta",
+    "allowedModels": ["fast", "auto", "mock-fast-v1", "mock-fast-v2"],
+    "requestsPerMinute": 20,
+    "monthlyBudgetUsd": 5.00
+  },
+  {
+    "keyValue": "prism-sk-lowbudget-0003",
+    "alias": "team-lowbudget",
+    "allowedModels": ["fast", "smart", "auto"],
+    "requestsPerMinute": 60,
+    "monthlyBudgetUsd": 0.01
+  }
+]

@@ -1,0 +1,6 @@
+[
+  { "model": "mock-fast-v1",  "provider": "mock-provider-a", "inputPricePer1k": 0.0002, "outputPricePer1k": 0.0006 },
+  { "model": "mock-smart-v1", "provider": "mock-provider-a", "inputPricePer1k": 0.0030, "outputPricePer1k": 0.0150 },
+  { "model": "mock-fast-v2",  "provider": "mock-provider-b", "inputPricePer1k": 0.0003, "outputPricePer1k": 0.0007 },
+  { "model": "mock-smart-v2", "provider": "mock-provider-b", "inputPricePer1k": 0.0035, "outputPricePer1k": 0.0140 }
+]

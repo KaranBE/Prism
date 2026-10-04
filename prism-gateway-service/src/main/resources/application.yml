@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: prism-gateway-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/prism}
+    username: ${SPRING_DATASOURCE_USERNAME:prism}
+    password: ${SPRING_DATASOURCE_PASSWORD:prism}
+    hikari:
+      # Connection-pool sizing: the gateway is I/O bound on the DB for budget charges and async
+      # log batches, not CPU bound, so a modest pool with a short connection-timeout fails fast
+      # under saturation instead of queuing requests indefinitely behind the pool.
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: 5
+      connection-timeout: 3000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100   # batched INSERTs for the request-log flush path
+        order_inserts: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+prism:
+  provider:
+    connect-timeout-ms: 2000
+  cache-service:
+    base-url: ${PRISM_CACHE_SERVICE_URL:http://localhost:8081}
+  usage-service:
+    base-url: ${PRISM_USAGE_SERVICE_URL:http://localhost:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.airtribe.prism: INFO
