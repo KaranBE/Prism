@@ -1,4 +1,4 @@
-# Prism — LLM Gateway and Semantic Cache
+# Prism — LLM Gateway and Semantic Cache (final)
 
 A production-shaped, OpenAI-compatible LLM gateway implemented as three independently
 deployable Java 17 / Spring Boot microservices, built for the Airtribe "Prism" capstone brief.
